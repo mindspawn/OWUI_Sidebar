@@ -94,6 +94,36 @@ async function determineActiveUrl() {
     return activeUrl;
 }
 
+async function openSidebarForActiveTab() {
+    try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        let windowId = activeTab?.windowId;
+
+        if (!windowId) {
+            const currentWindow = await chrome.windows.getCurrent();
+            windowId = currentWindow?.id;
+        }
+
+        if (activeTab?.id) {
+            try {
+                await chrome.sidePanel.setOptions({
+                    tabId: activeTab.id,
+                    path: 'sidepanel.html',
+                    enabled: true
+                });
+            } catch (optionsError) {
+                console.warn('Unable to set side panel options for shortcut:', optionsError);
+            }
+        }
+
+        if (windowId !== undefined) {
+            await chrome.sidePanel.open({ windowId });
+        }
+    } catch (error) {
+        console.error('Failed to open OWUI Sidebar via shortcut:', error);
+    }
+}
+
 // Check URLs on extension startup
 chrome.runtime.onStartup.addListener(async () => {
     console.log('Extension starting up, determining active URL...');
@@ -202,3 +232,11 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => {
     console.error('Failed to set panel behavior:', error);
 });
+
+if (chrome.commands) {
+    chrome.commands.onCommand.addListener((command) => {
+        if (command === '_execute_action') {
+            openSidebarForActiveTab();
+        }
+    });
+}
