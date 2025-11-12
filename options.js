@@ -240,7 +240,7 @@ async function saveOptions() {
 async function restoreOptions() {
     const items = await new Promise(resolve => {
         chrome.storage.sync.get({
-            sidebarUrl: 'https://example.com', // default value
+            sidebarUrl: 'https://chat.foo.bar', // default value
             externalUrl: '',
             summaryLanguage: 'en',
             overridePrompt: false,

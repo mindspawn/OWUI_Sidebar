@@ -29,7 +29,7 @@ async function determineActiveUrl() {
     let urlSource = null;
     
     // First try internal URL
-    if (settings.sidebarUrl && settings.sidebarUrl !== '' && settings.sidebarUrl !== 'https://example.com') {
+    if (settings.sidebarUrl && settings.sidebarUrl !== '' && settings.sidebarUrl !== 'https://chat.foo.bar') {
         console.log('Checking internal URL:', settings.sidebarUrl);
         const isInternalReachable = await checkUrlReachability(settings.sidebarUrl);
         

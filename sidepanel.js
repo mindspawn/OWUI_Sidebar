@@ -126,7 +126,7 @@ async function loadActiveUrl() {
     // First check if we have an active URL from the background script
     const localData = await chrome.storage.local.get(['activeUrl', 'activeUrlSource', 'lastUrlCheck']);
     
-    if (localData.activeUrl && localData.activeUrl !== 'https://example.com') {
+    if (localData.activeUrl && localData.activeUrl !== 'https://chat.foo.bar') {
         // Use the active URL determined by background script
         console.log(`Loading active URL (${localData.activeUrlSource}):`, localData.activeUrl);
         const iframe = document.getElementById('sidebarFrame');
@@ -141,7 +141,7 @@ async function loadActiveUrl() {
         // Fallback: request background script to determine active URL
         console.log('No active URL found, requesting check from background...');
         chrome.runtime.sendMessage({ action: 'recheckUrls' }, async (response) => {
-            if (response && response.activeUrl && response.activeUrl !== 'https://example.com') {
+            if (response && response.activeUrl && response.activeUrl !== 'https://chat.foo.bar') {
                 const iframe = document.getElementById('sidebarFrame');
                 iframe.src = response.activeUrl;
                 
@@ -156,7 +156,7 @@ async function loadActiveUrl() {
                     const iframe = document.getElementById('sidebarFrame');
                     
                     // If no URL is configured or it's the default example.com, show settings prompt
-                    if (!items.sidebarUrl || items.sidebarUrl === 'https://example.com' || items.sidebarUrl === '') {
+                    if (!items.sidebarUrl || items.sidebarUrl === 'https://chat.foo.bar' || items.sidebarUrl === '') {
                         // Instead of using a data URL with postMessage, create the content directly in the iframe
                         // First set a blank page
                         iframe.src = 'about:blank';
