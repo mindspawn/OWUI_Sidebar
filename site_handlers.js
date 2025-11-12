@@ -69,16 +69,31 @@
 
                         const issue = await response.json();
                         const fields = issue.fields || {};
+                        const capitalizeWord = (word) => word ? word.charAt(0).toUpperCase() + word.slice(1) : '';
+                        const humanizeIdentifier = (identifier) => {
+                            if (!identifier) return 'Unknown';
+                            const cleaned = identifier.replace(/^accountid:/i, '');
+                            return cleaned
+                                .split(/[._\-\s@]+/)
+                                .filter(Boolean)
+                                .map(capitalizeWord)
+                                .join(' ') || identifier;
+                        };
+                        const replaceUserMentions = (text) => {
+                            if (!text) return '';
+                            return text.replace(/\[~([^\]]+)\]/g, (_, token) => humanizeIdentifier(token));
+                        };
                         const cleanHtml = (value) => {
                             if (!value) return '';
                             const temp = document.createElement('div');
                             const source = typeof value === 'string' ? value : String(value);
                             temp.innerHTML = source;
-                            return (temp.textContent || temp.innerText || '').replace(/\s+/g, ' ').trim();
+                            const text = (temp.textContent || temp.innerText || '').replace(/\s+/g, ' ').trim();
+                            return replaceUserMentions(text);
                         };
                         const formatUser = (user) => {
                             if (!user) return '—';
-                            const parts = [user.displayName || user.name || '—'];
+                            const parts = [user.displayName || humanizeIdentifier(user.name) || '—'];
                             if (user.emailAddress) {
                                 parts.push(`<${user.emailAddress}>`);
                             }
@@ -93,8 +108,9 @@
                         };
 
                         const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
+                        const summaryText = replaceUserMentions(fields.summary || '—');
                         const comments = (fields.comment?.comments || []).map(comment => {
-                            const authorName = comment.author?.displayName || comment.author?.name || 'Unknown';
+                            const authorName = comment.author?.displayName || humanizeIdentifier(comment.author?.name) || 'Unknown';
                             const dateLabel = formatCommentDate(comment.updated || comment.created);
                             const body = cleanHtml(comment.body) || '—';
                             return `comment by ${authorName} on ${dateLabel}:\n${body}`;
@@ -104,7 +120,7 @@
                             `Issue: ${issue.key}`,
                             `URL: ${window.location.href}`,
                             '',
-                            `Summary: ${fields.summary || '—'}`,
+                            `Summary: ${summaryText}`,
                             `Status: ${fields.status?.name || '—'}`,
                             `Assignee: ${formatUser(fields.assignee)}`,
                             `Reporter: ${formatUser(fields.reporter)}`,
