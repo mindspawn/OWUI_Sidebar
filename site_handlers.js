@@ -85,10 +85,19 @@
                             return parts.join(' ');
                         };
                         const formatDate = (value) => (value ? new Date(value).toISOString() : '—');
+                        const formatCommentDate = (value) => {
+                            if (!value) return '—';
+                            const date = new Date(value);
+                            if (isNaN(date.getTime())) return '—';
+                            return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+                        };
 
                         const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
                         const comments = (fields.comment?.comments || []).map(comment => {
-                            return `- ${comment.author?.displayName || 'Unknown'} @ ${formatDate(comment.updated || comment.created)}\n  ${cleanHtml(comment.body)}`;
+                            const authorName = comment.author?.displayName || comment.author?.name || 'Unknown';
+                            const dateLabel = formatCommentDate(comment.updated || comment.created);
+                            const body = cleanHtml(comment.body) || '—';
+                            return `comment by ${authorName} on ${dateLabel}:\n${body}`;
                         });
 
                         const lines = [
