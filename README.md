@@ -3,6 +3,14 @@
 # OWUI Sidebar Extension
 
 A Chrome/Edge(tested)/Brave extension that integrates Open WebUI (OWUI) directly into your browser's sidebar, providing seamless access to AI chat capabilities while preserving your browsing context and authentication.
+
+## Recent Updates
+
+- Default internal/external URLs now point to `https://chat.foo.bar`, so new installs work immediately until you swap in your own hostnames.
+- The options UI hides everything except the summary language/prompt override controls to keep fork merges clean; API and URL fields still exist but are hidden until needed.
+- Site-specific handlers for Jira and Confluence (Data Center v9) reuse the browser session to fetch REST metadata and drop sanitized `.txt` files instead of raw HTML.
+- Plain-text drops share the same sanitized pipeline as PDFs/HTML, preventing non-ASCII issues for custom handlers.
+- Keyboard shortcut updated to `Ctrl+Alt+H` (same on macOS) to open the sidebar instantly; configure via `chrome://extensions/shortcuts` if needed.
 **Key advantages**: Smart dual-URL routing avoids tunnel overhead (Tailscale/Cloudflare) when using internal URLs, and content extraction ensures authenticated pages remain accessible to OWUI (unlike URL-only attachment).
 
 ## Overview
@@ -60,6 +68,8 @@ This dual-URL approach ensures that:
 - **Seamless fallback**: If you're away from your local network, the extension automatically uses your external URL
 - **Optimized performance**: When you have access to the internal URL, queries are processed directly without going through tunnels (Tailscale, Cloudflare, etc.), resulting in faster response times and reduced latency
 
+Both internal and external URL defaults are preset to `https://chat.foo.bar`. Update them from the options page (or via sync storage) when pointing at a different OWUI deployment.
+
 Without this approach, you might encounter:
 - Login prompts when already authenticated
 - Different content due to missing session context
@@ -73,6 +83,23 @@ The extension displays visual indicators to show the current connection status:
 - **Green I** ![Internal] Connected to internal/local Open WebUI instance
 - **Green O* ![External] Connected to external/remote Open WebUI instance
 - **Status messages**: Temporary notifications for successful operations or errors
+
+### 🧠 Site-Aware Extraction (Jira & Confluence)
+
+- **Jira Data Center v9**: When you’re on `jira.foo.bar`, the extension calls `/rest/api/2/issue/{key}` using your authenticated browser session. It exports summary, status, assignee, reporter, timestamps, epic, description, and comment history. Mentions like `[~jon.doe]` become human-readable names, and each comment is printed as:
+
+  ```
+  comment by Jon Doe on 5/22/2025:
+  Comment body here
+  ```
+
+- **Confluence Data Center v9**: On `confluence.foo.bar`, the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
+
+Both handlers are registered separately (see `site_handlers/`) to keep the core capture logic untouched, and they emit clean ASCII `.txt` files dropped via the same drag-and-drop pipeline the chat frame already understands.
+
+### ⌨ Keyboard Shortcut
+
+Use `Ctrl+Alt+H` to open the OWUI sidebar from anywhere. Visit `chrome://extensions/shortcuts` if you’d like to customize or confirm the binding after loading the extension.
 
 ## Installation Instructions
 
@@ -119,10 +146,8 @@ The extension displays visual indicators to show the current connection status:
    - Click on the extension icon in the toolbar (you may need to pin it from the extensions menu)
    - If you haven't configured a URL yet, you'll see a welcome message with a button to open settings
    - Right-click the extension icon and select "Options" or click "Details" → "Extension options"
-   - Configure your URLs:
-     - **Internal URL**: Your local Open WebUI instance (e.g., `http://localhost:3000`)
-     - **External URL**: Your remote Open WebUI instance (optional fallback)
-     - **API/JWT Key**: Your Open WebUI API key (found in Settings → Account → API Keys)
+   - Internal/external URLs default to `https://chat.foo.bar`. Update them (even though the fields are hidden by default) if your OWUI instance lives elsewhere. Only the summary language and prompt override controls stay visible to reduce merge noise.
+   - (Optional) Reveal the knowledge/API settings if you plan to use RAG uploads; the API/JWT key still lives there.
 
 7. **Access the Sidebar**
    - Click the extension icon to open the Open WebUI sidebar
@@ -177,6 +202,10 @@ owui-sidebar/
 ├── options.html          # Settings page structure
 ├── options.js            # Settings functionality
 ├── OWUI_Knowledge_tools.js # Knowledge API integration
+├── site_handlers/
+│   ├── registry.js        # Lightweight registry for per-site handlers
+│   ├── jira.js            # Jira Data Center v9 handler
+│   └── confluence.js      # Confluence Data Center v9 handler
 ├── icons/                # Extension icons
 │   ├── icon16.png
 │   ├── icon32.png
