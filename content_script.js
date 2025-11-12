@@ -6,12 +6,6 @@ async function dropPDFFromUrl(pdfUrl, fileName) {
     console.log('PDF URL:', pdfUrl);
     console.log('File name:', fileName);
     
-    const chatInput = document.querySelector('[contenteditable="true"]');
-    if (!chatInput) {
-        console.error("No contenteditable chat input found.");
-        return { success: false, message: 'No contenteditable chat input found' };
-    }
-    
     try {
         // Try to fetch the PDF file
         let blob;
@@ -66,37 +60,7 @@ async function dropPDFFromUrl(pdfUrl, fileName) {
         const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
         console.log(`Created PDF file: ${fileName} (${pdfFile.size} bytes)`);
         
-        // Create a DataTransfer object and add the PDF file
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(pdfFile);
-        
-        // Create a synthetic drop event
-        const dropEvent = new DragEvent("drop", {
-            bubbles: true,
-            cancelable: true,
-            dataTransfer: dataTransfer,
-        });
-        
-        // Focus the chat input before dropping
-        chatInput.focus();
-        
-        // Dispatch the drop event on the chat input
-        const eventDispatched = chatInput.dispatchEvent(dropEvent);
-        console.log(`Drop event dispatched: ${eventDispatched}`);
-        
-        // Also try alternative drop methods
-        setTimeout(() => {
-            // Try triggering input event as well
-            const inputEvent = new Event('input', { bubbles: true });
-            chatInput.dispatchEvent(inputEvent);
-            
-            // Try change event
-            const changeEvent = new Event('change', { bubbles: true });
-            chatInput.dispatchEvent(changeEvent);
-        }, 100);
-        
-        console.log(`✅ Dropped PDF file: ${fileName}`);
-        return { success: true, message: `PDF file "${fileName}" dropped successfully` };
+        return dispatchVirtualFileDrop(pdfFile, fileName);
         
     } catch (error) {
         console.error('Error dropping PDF:', error);
@@ -111,6 +75,38 @@ async function dropPDFFromUrl(pdfUrl, fileName) {
         
         return { success: false, message: `Error dropping PDF: ${errorMessage}` };
     }
+}
+
+// Reusable helper to drop a file onto the chat input
+function dispatchVirtualFileDrop(file, fileName) {
+    const chatInput = document.querySelector('[contenteditable="true"]');
+    if (!chatInput) {
+        console.error('No contenteditable chat input found.');
+        return { success: false, message: 'No contenteditable chat input found' };
+    }
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+
+    const dropEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: dataTransfer,
+    });
+
+    chatInput.focus();
+    const eventDispatched = chatInput.dispatchEvent(dropEvent);
+    console.log(`Drop event dispatched: ${eventDispatched}`);
+
+    setTimeout(() => {
+        const inputEvent = new Event('input', { bubbles: true });
+        chatInput.dispatchEvent(inputEvent);
+        const changeEvent = new Event('change', { bubbles: true });
+        chatInput.dispatchEvent(changeEvent);
+    }, 100);
+
+    console.log(`✅ Dropped file: ${fileName}`);
+    return { success: true, message: `File "${fileName}" dropped successfully` };
 }
 
 // The file drop simulation function
@@ -229,22 +225,32 @@ function simulateFileDrop(htmlContent, fileName, sourceUrl) {
         }
     }
 
-    // Create a DataTransfer object and add the file
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(htmlFile);
+    return dispatchVirtualFileDrop(htmlFile, fileNameToUse);
+}
 
-    // Create a synthetic drop event
-    const dropEvent = new DragEvent("drop", {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: dataTransfer,
-    });
+function sanitizePlainText(text) {
+    if (!text) return '';
+    let sanitized = text.replace(/\r\n/g, '\n');
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    sanitized = sanitized.replace(/[\u0080-\uFFFF]/g, '');
+    sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
+    sanitized = sanitized.replace(/[ \t]{2,}/g, ' ');
+    return sanitized.trim();
+}
 
-    // Dispatch the drop event on the chat input
-    chatInput.dispatchEvent(dropEvent);
-
-    console.log(`✅ Dropped HTML file: ${fileNameToUse}`);
-    return { success: true, message: `HTML file "${fileNameToUse}" dropped successfully` };
+function simulateTextFileDrop(textContent, fileName) {
+    console.log('=== DROPPING TEXT FILE ===');
+    const safeName = (fileName || 'content.txt').replace(/[^a-z0-9_.-]/gi, '_');
+    const sanitizedContent = sanitizePlainText(textContent || '');
+    
+    try {
+        const textFile = new File([sanitizedContent], safeName, { type: 'text/plain' });
+        console.log(`Created text file: ${safeName} (${textFile.size} bytes)`);
+        return dispatchVirtualFileDrop(textFile, safeName);
+    } catch (error) {
+        console.error('Error creating or dropping text file:', error);
+        return { success: false, message: `Error dropping text file: ${error.message}` };
+    }
 }
 
 // Listen for messages from the extension
@@ -290,6 +296,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         } else {
             console.log('Not the target frame (no contenteditable), skipping...');
+            sendResponse({ success: false, message: 'Not the target frame - no contenteditable element' });
+        }
+    } else if (request.action === 'dropTextFile') {
+        const chatInput = document.querySelector('[contenteditable="true"]');
+        console.log(`Frame has contenteditable: ${!!chatInput} at ${window.location.href}`);
+        
+        if (chatInput) {
+            try {
+                const textContent = request.textContent || '';
+                const fileName = request.fileName || 'content.txt';
+                const result = simulateTextFileDrop(textContent, fileName);
+                sendResponse(result);
+            } catch (error) {
+                console.error('Text file drop error:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        } else {
+            console.log('Not the target frame (no contenteditable), skipping text drop...');
             sendResponse({ success: false, message: 'Not the target frame - no contenteditable element' });
         }
     }
@@ -605,6 +629,34 @@ window.addEventListener('message', (event) => {
                     }, event.origin);
                 }
             }
+        }
+    }
+    
+    if (event.data && event.data.action === 'dropTextFile') {
+        console.log('Received postMessage command to drop text file');
+        const chatInput = document.querySelector('[contenteditable="true"]');
+        if (chatInput) {
+            try {
+                const textContent = event.data.textContent || '';
+                const fileName = event.data.fileName || 'content.txt';
+                const result = simulateTextFileDrop(textContent, fileName);
+                if (event.source) {
+                    event.source.postMessage({
+                        status: result.success ? 'success' : 'error',
+                        message: result.message
+                    }, event.origin);
+                }
+            } catch (error) {
+                console.error('Text file drop error:', error);
+                if (event.source) {
+                    event.source.postMessage({
+                        status: 'error',
+                        message: error.message
+                    }, event.origin);
+                }
+            }
+        } else {
+            console.log('No chat input found in this frame');
         }
     }
     

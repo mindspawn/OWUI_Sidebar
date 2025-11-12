@@ -102,6 +102,96 @@ function showStatusMessage(message, isError = false) {
     }
 }
 
+function sanitizePlainTextContent(text) {
+    if (!text) return '';
+    let sanitized = text.replace(/\r\n/g, '\n');
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    sanitized = sanitized.replace(/[\u0080-\uFFFF]/g, '');
+    sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
+    sanitized = sanitized.replace(/[ \t]{2,}/g, ' ');
+    return sanitized.trim();
+}
+
+async function dropTextFileToChat(textContent, fileName, iframe) {
+    const sanitizedText = sanitizePlainTextContent(textContent || '');
+    const safeName = (fileName || 'attachment.txt').replace(/[^a-z0-9_.-]/gi, '_') || 'attachment.txt';
+    const payload = {
+        action: 'dropTextFile',
+        textContent: sanitizedText,
+        fileName: safeName
+    };
+
+    let statusAcknowledged = false;
+
+    if (iframe && iframe.contentWindow) {
+        try {
+            iframe.contentWindow.postMessage(payload, '*');
+        } catch (error) {
+            console.warn('Unable to postMessage text drop to iframe:', error);
+        }
+    }
+
+    try {
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+            if (!tab.id) continue;
+
+            chrome.tabs.sendMessage(tab.id, payload, { frameId: 0 }, (response) => {
+                if (!chrome.runtime.lastError && response && response.success && !statusAcknowledged) {
+                    statusAcknowledged = true;
+                    showStatusMessage(response.message || 'Text file dropped');
+                }
+            });
+
+            try {
+                const frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id });
+                for (const frame of frames) {
+                    if (frame.frameId === 0) continue;
+                    chrome.tabs.sendMessage(tab.id, payload, { frameId: frame.frameId }, (response) => {
+                        if (!chrome.runtime.lastError && response && response.success && !statusAcknowledged) {
+                            statusAcknowledged = true;
+                            showStatusMessage(response.message || 'Text file dropped');
+                        }
+                    });
+                }
+            } catch (frameError) {
+                console.debug('Unable to inspect frames for tab', tab.id, frameError);
+            }
+        }
+    } catch (error) {
+        console.error('Error broadcasting text file drop:', error);
+        showStatusMessage('Failed to drop text file', true);
+    }
+
+    return statusAcknowledged;
+}
+
+async function runCustomSiteHandlerIfAvailable(activeTab, iframe, shouldSummarize) {
+    if (!window.CustomSiteHandlers || typeof window.CustomSiteHandlers.getHandlerForUrl !== 'function') {
+        return { handled: false };
+    }
+
+    const handler = window.CustomSiteHandlers.getHandlerForUrl(activeTab.url);
+    if (!handler || typeof handler.handle !== 'function') {
+        return { handled: false };
+    }
+
+    try {
+        const context = {
+            tab: activeTab,
+            iframe,
+            shouldSummarize,
+            showStatusMessage,
+            dropTextFile: (text, name) => dropTextFileToChat(text, name, iframe)
+        };
+        const result = await handler.handle(context);
+        return result || { handled: false };
+    } catch (error) {
+        console.error('Custom site handler execution failed:', error);
+        return { handled: false };
+    }
+}
+
 // Update status icons based on which URL is active
 function updateStatusIcons(urlSource) {
     const internalIcon = document.getElementById('internalIcon');
@@ -680,6 +770,16 @@ async function executeFileDropInIframe(shouldSummarize = false) {
         if (shouldSummarize) {
             // Store flag to trigger summary after successful drop
             await chrome.storage.local.set({ pendingSummary: true });
+        }
+        
+        const customHandlerResult = await runCustomSiteHandlerIfAvailable(activeTab, iframe, shouldSummarize);
+        if (customHandlerResult?.handled) {
+            if (customHandlerResult.message) {
+                showStatusMessage(customHandlerResult.message);
+            }
+            if (!customHandlerResult.continueDefault) {
+                return;
+            }
         }
         
         // Route based on URL type
