@@ -117,17 +117,31 @@
                                 }
                                 return parts.join(' ');
                             };
-                            const formatDate = (value) => (value ? new Date(value).toISOString() : '—');
-                            const formatCommentDate = (value) => {
-                                if (!value) return '—';
-                                const date = new Date(value);
-                                if (isNaN(date.getTime())) return '—';
-                                return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-                            };
+                        const formatDate = (value) => (value ? new Date(value).toISOString() : '—');
+                        const formatCommentDate = (value) => {
+                            if (!value) return '—';
+                            const date = new Date(value);
+                            if (isNaN(date.getTime())) return '—';
+                            return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+                        };
+                        const formatList = (items) => {
+                            if (!items || !items.length) return '—';
+                            const values = items
+                                .map(item => {
+                                    if (typeof item === 'string') return item;
+                                    if (item && typeof item === 'object') {
+                                        return item.name || item.value || item.id || '';
+                                    }
+                                    return '';
+                                })
+                                .map(value => value?.toString().trim())
+                                .filter(Boolean);
+                            return values.length ? values.join(', ') : '—';
+                        };
 
-                            const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
-                            const summaryText = replaceUserMentions(fields.summary || '—');
-                            const commentsSource = (fields.comment?.comments || []).filter(comment => !shouldIgnoreComment(comment.author));
+                        const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
+                        const summaryText = replaceUserMentions(fields.summary || '—');
+                        const commentsSource = (fields.comment?.comments || []).filter(comment => !shouldIgnoreComment(comment.author));
                             const comments = commentsSource.map(comment => {
                                 const authorName = comment.author?.displayName || humanizeIdentifier(comment.author?.name) || 'Unknown';
                                 const dateLabel = formatCommentDate(comment.updated || comment.created);
@@ -138,17 +152,22 @@
                             const lines = [
                                 `Issue: ${issue.key}`,
                                 `URL: ${window.location.href}`,
-                                '',
-                                `Summary: ${summaryText}`,
-                                `Status: ${fields.status?.name || '—'}`,
-                                `Assignee: ${formatUser(fields.assignee)}`,
-                                `Reporter: ${formatUser(fields.reporter)}`,
-                                `Created: ${formatDate(fields.created)}`,
-                                `Updated: ${formatDate(fields.updated)}`,
-                                `Resolved: ${formatDate(fields.resolutiondate)}`,
-                                `Epic: ${fields.customfield_10011 || fields.epic?.name || '—'}`,
-                                '',
-                                'Description:',
+                            '',
+                            `Summary: ${summaryText}`,
+                            `Status: ${fields.status?.name || '—'}`,
+                            `Priority: ${fields.priority?.name || '—'}`,
+                            `Assignee: ${formatUser(fields.assignee)}`,
+                            `Reporter: ${formatUser(fields.reporter)}`,
+                            `Created: ${formatDate(fields.created)}`,
+                            `Updated: ${formatDate(fields.updated)}`,
+                            `Resolved: ${formatDate(fields.resolutiondate)}`,
+                            `Epic: ${fields.customfield_10011 || fields.epic?.name || '—'}`,
+                            `Affects Versions: ${formatList(fields.versions)}`,
+                            `Fix Versions: ${formatList(fields.fixVersions)}`,
+                            `Labels: ${formatList(fields.labels)}`,
+                            `Components: ${formatList(fields.components)}`,
+                            '',
+                            'Description:',
                                 description || '—',
                                 '',
                                 'Comments:',
