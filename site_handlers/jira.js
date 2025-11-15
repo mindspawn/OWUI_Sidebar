@@ -138,20 +138,30 @@
                                 .filter(Boolean);
                             return values.length ? values.join(', ') : '—';
                         };
+                        const formatFieldValue = (value, defaultValue = '—') => {
+                            if (value === null || value === undefined) return defaultValue;
+                            if (typeof value === 'string') return value || defaultValue;
+                            if (typeof value === 'object') {
+                                const resolved = value.displayName || value.name || value.value || value.id || '';
+                                return resolved || defaultValue;
+                            }
+                            const stringValue = String(value);
+                            return stringValue || defaultValue;
+                        };
 
                         const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
                         const summaryText = replaceUserMentions(fields.summary || '—');
                         const commentsSource = (fields.comment?.comments || []).filter(comment => !shouldIgnoreComment(comment.author));
-                            const comments = commentsSource.map(comment => {
+                        const comments = commentsSource.map(comment => {
                                 const authorName = comment.author?.displayName || humanizeIdentifier(comment.author?.name) || 'Unknown';
                                 const dateLabel = formatCommentDate(comment.updated || comment.created);
                                 const body = cleanHtml(comment.body) || '—';
                                 return `comment by ${authorName} on ${dateLabel}:\n${body}`;
                             });
 
-                            const lines = [
-                                `Issue: ${issue.key}`,
-                                `URL: ${window.location.href}`,
+                        const lines = [
+                            `Issue: ${issue.key}`,
+                            `URL: ${window.location.href}`,
                             '',
                             `Summary: ${summaryText}`,
                             `Status: ${fields.status?.name || '—'}`,
@@ -162,6 +172,8 @@
                             `Updated: ${formatDate(fields.updated)}`,
                             `Resolution: ${fields.resolution?.name || 'None'}`,
                             `Epic: ${fields.customfield_10011 || fields.epic?.name || '—'}`,
+                            `Discovered in Product: ${formatFieldValue(fields.customfield_10719, 'None')}`,
+                            `Discovered in Customer: ${formatFieldValue(fields.customfield_23301, 'None')}`,
                             `Affects Versions: ${formatList(fields.versions)}`,
                             `Fix Versions: ${formatList(fields.fixVersions)}`,
                             `Labels: ${formatList(fields.labels)}`,
