@@ -88,7 +88,7 @@ The extension displays visual indicators to show the current connection status:
 
 ### 🧠 Site-Aware Extraction (Jira & Confluence)
 
-- **Jira Data Center v9**: When you’re on `jira.foo.bar`, the extension calls `/rest/api/2/issue/{key}` using your authenticated browser session. It exports summary, status, assignee, reporter, timestamps, epic, description, and comment history. Mentions like `[~jon.doe]` become human-readable names, and each comment is printed as:
+- **Jira Data Center v9**: When you’re on your configured Jira host (see `urlConfig.js`, default `jira.foo.bar`), the extension calls `/rest/api/2/issue/{key}` using your authenticated browser session. It exports summary, status, assignee, reporter, timestamps, epic, description, and comment history. Mentions like `[~jon.doe]` become human-readable names, and each comment is printed as:
 
   ```
   comment by Jon Doe on 5/22/2025:
@@ -96,7 +96,7 @@ The extension displays visual indicators to show the current connection status:
   ```
   Edit the `IGNORED_JIRA_USERS` array inside `site_handlers/jira.js` to omit bot/system commenters (use lowercase usernames/account IDs).
 
-- **Confluence Data Center v9**: On `confluence.foo.bar`, the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
+- **Confluence Data Center v9**: On your configured Confluence host (`urlConfig.js`, default `confluence.foo.bar`), the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
 
 Both handlers are registered separately (see `site_handlers/`) to keep the core capture logic untouched, and they emit clean ASCII `.txt` files dropped via the same drag-and-drop pipeline the chat frame already understands.
 

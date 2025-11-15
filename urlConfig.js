@@ -1,7 +1,9 @@
 // Centralized defaults for OWUI endpoints.
 const OWUI_URL_CONFIG = {
     sidebarUrl: 'https://chat.foo.bar',
-    externalUrl: 'https://chat.foo.bar'
+    externalUrl: 'https://chat.foo.bar',
+    jiraHost: 'jira.foo.bar',
+    confluenceHost: 'confluence.foo.bar'
 };
 
 // Expose the config globally so it can be consumed from service workers and DOM contexts.

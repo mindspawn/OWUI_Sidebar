@@ -1,9 +1,12 @@
 (function() {
     if (!window.CustomSiteHandlers) return;
 
+    const confluenceHost = (window.OWUI_URL_CONFIG?.confluenceHost || 'confluence.foo.bar').toLowerCase();
+
     window.CustomSiteHandlers.register({
-        id: 'confluence.foo.bar',
-        matches: (urlObj) => urlObj.hostname.toLowerCase() === 'confluence.foo.bar' && (/\/pages\//i.test(urlObj.pathname) || /\/display\//i.test(urlObj.pathname) || urlObj.pathname === '/pages/viewpage.action'),
+        id: confluenceHost,
+        matches: (urlObj) => urlObj.hostname.toLowerCase() === confluenceHost &&
+            (/\/pages\//i.test(urlObj.pathname) || /\/display\//i.test(urlObj.pathname) || urlObj.pathname === '/pages/viewpage.action'),
         handle: async ({ tab, dropTextFile, showStatusMessage }) => {
             if (!tab?.id || typeof dropTextFile !== 'function') {
                 return { handled: false };

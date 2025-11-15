@@ -7,9 +7,11 @@
         'service.account'
     ];
 
+    const jiraHost = (window.OWUI_URL_CONFIG?.jiraHost || 'jira.foo.bar').toLowerCase();
+
     window.CustomSiteHandlers.register({
-        id: 'jira.foo.bar',
-        matches: (urlObj) => urlObj.hostname.toLowerCase() === 'jira.foo.bar' && /\/browse\//i.test(urlObj.pathname),
+        id: jiraHost,
+        matches: (urlObj) => urlObj.hostname.toLowerCase() === jiraHost && /\/browse\//i.test(urlObj.pathname),
         handle: async ({ tab, dropTextFile, showStatusMessage }) => {
             if (!tab?.id || typeof dropTextFile !== 'function') {
                 return { handled: false };
