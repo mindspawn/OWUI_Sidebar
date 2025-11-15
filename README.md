@@ -8,6 +8,7 @@ A Chrome/Edge(tested)/Brave extension that integrates Open WebUI (OWUI) directly
 
 - Default internal/external URLs now point to `https://chat.foo.bar`, so new installs work immediately until you swap in your own hostnames.
 - `urlConfig.js` now owns the internal/external defaults, so you can adjust them without touching other files (and avoid merge conflicts).
+- You can list multiple Jira/Confluence hostnames in `urlConfig.js`, letting the site handlers work across every deployment you care about.
 - The options UI hides everything except the summary language/prompt override controls to keep fork merges clean; API and URL fields still exist but are hidden until needed.
 - Site-specific handlers for Jira and Confluence (Data Center v9) reuse the browser session to fetch REST metadata and drop sanitized `.txt` files instead of raw HTML.
 - Added a Jira ignore list (hardcoded in `site_handlers/jira.js`) so you can skip status-bot or noisy system users when exporting comments.
@@ -88,7 +89,7 @@ The extension displays visual indicators to show the current connection status:
 
 ### 🧠 Site-Aware Extraction (Jira & Confluence)
 
-- **Jira Data Center v9**: When you’re on your configured Jira host (see `urlConfig.js`, default `jira.foo.bar`), the extension calls `/rest/api/2/issue/{key}` using your authenticated browser session. It exports summary, status, assignee, reporter, timestamps, epic, description, and comment history. Mentions like `[~jon.doe]` become human-readable names, and each comment is printed as:
+- **Jira Data Center v9**: When you’re on any host listed in the `jiraHosts` array inside `urlConfig.js` (default entry: `jira.foo.bar`), the extension calls `/rest/api/2/issue/{key}` using your authenticated browser session. It exports summary, status, assignee, reporter, timestamps, epic, description, and comment history. Mentions like `[~jon.doe]` become human-readable names, and each comment is printed as:
 
   ```
   comment by Jon Doe on 5/22/2025:
@@ -96,7 +97,7 @@ The extension displays visual indicators to show the current connection status:
   ```
   Edit the `IGNORED_JIRA_USERS` array inside `site_handlers/jira.js` to omit bot/system commenters (use lowercase usernames/account IDs).
 
-- **Confluence Data Center v9**: On your configured Confluence host (`urlConfig.js`, default `confluence.foo.bar`), the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
+- **Confluence Data Center v9**: On any host declared in `urlConfig.js` under `confluenceHosts` (default entry: `confluence.foo.bar`), the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
 
 Both handlers are registered separately (see `site_handlers/`) to keep the core capture logic untouched, and they emit clean ASCII `.txt` files dropped via the same drag-and-drop pipeline the chat frame already understands.
 

@@ -1,13 +1,35 @@
 (function() {
     if (!window.CustomSiteHandlers) return;
 
-    const confluenceHost = (window.OWUI_URL_CONFIG?.confluenceHost || 'confluence.foo.bar').toLowerCase();
+    const rawHosts = window.OWUI_URL_CONFIG?.confluenceHosts;
+    const fallbackHost = window.OWUI_URL_CONFIG?.confluenceHost;
+    const hostCandidates = [];
 
-    window.CustomSiteHandlers.register({
-        id: confluenceHost,
-        matches: (urlObj) => urlObj.hostname.toLowerCase() === confluenceHost &&
-            (/\/pages\//i.test(urlObj.pathname) || /\/display\//i.test(urlObj.pathname) || urlObj.pathname === '/pages/viewpage.action'),
-        handle: async ({ tab, dropTextFile, showStatusMessage }) => {
+    if (Array.isArray(rawHosts)) {
+        hostCandidates.push(...rawHosts);
+    } else if (rawHosts) {
+        hostCandidates.push(rawHosts);
+    }
+    if (fallbackHost) {
+        hostCandidates.push(fallbackHost);
+    }
+
+    const confluenceHosts = Array.from(new Set(
+        hostCandidates
+            .map(host => (host || '').toLowerCase())
+            .filter(Boolean)
+    ));
+
+    if (!confluenceHosts.length) {
+        confluenceHosts.push('confluence.foo.bar');
+    }
+
+    const registerHandler = (host) => {
+        window.CustomSiteHandlers.register({
+            id: host,
+            matches: (urlObj) => urlObj.hostname.toLowerCase() === host &&
+                (/\/pages\//i.test(urlObj.pathname) || /\/display\//i.test(urlObj.pathname) || urlObj.pathname === '/pages/viewpage.action'),
+            handle: async ({ tab, dropTextFile, showStatusMessage }) => {
             if (!tab?.id || typeof dropTextFile !== 'function') {
                 return { handled: false };
             }
@@ -148,6 +170,9 @@
                 showStatusMessage('Confluence handler failed. Falling back to default extraction.', true);
                 return { handled: false };
             }
-        }
-    });
+            }
+        });
+    };
+
+    confluenceHosts.forEach(registerHandler);
 })();
