@@ -138,7 +138,7 @@
                                 .filter(Boolean);
                             return values.length ? values.join(', ') : '—';
                         };
-                        const formatFieldValue = (value, defaultValue = '—') => {
+                        const formatFieldValue = (value, defaultValue = 'null') => {
                             if (value === null || value === undefined) return defaultValue;
                             if (typeof value === 'string') return value || defaultValue;
                             if (typeof value === 'object') {
@@ -219,11 +219,11 @@
                             `Reporter: ${formatUser(fields.reporter)}`,
                             `Created: ${formatDate(fields.created)}`,
                             `Updated: ${formatDate(fields.updated)}`,
-                            `Resolution: ${fields.resolution?.name || 'None'}`,
-                            `Epic Link: ${epicLink || 'None'}`,
-                            `Parent Link: ${parentLink || 'None'}`,
-                            `Discovered in Product: ${formatFieldValue(fields.customfield_10719, 'None')}`,
-                            `Discovered in Customer: ${formatFieldValue(fields.customfield_23301, 'None')}`,
+                            `Resolution: ${fields.resolution?.name || 'null'}`,
+                            `Epic Link: ${epicLink || 'null'}`,
+                            `Parent Link: ${parentLink || 'null'}`,
+                            `Discovered in Product: ${formatFieldValue(fields.customfield_10719, 'null')}`,
+                            `Discovered in Customer: ${formatFieldValue(fields.customfield_23301, 'null')}`,
                             `Affects Versions: ${formatList(fields.versions)}`,
                             `Fix Versions: ${formatList(fields.fixVersions)}`,
                             `Labels: ${formatList(fields.labels)}`,

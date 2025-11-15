@@ -140,7 +140,7 @@
                             `Created: ${formatDate(createdDate)}`,
                             `Last Updated By: ${formatUser(page.history?.lastUpdated?.by || page.version?.by)}`,
                             `Last Updated: ${formatDate(updatedDate)}`,
-                            `Labels: ${labels.length ? labels.join(', ') : 'None'}`,
+                            `Labels: ${labels.length ? labels.join(', ') : 'null'}`,
                             '',
                             'Headings:',
                             headings.length ? headings.join('\n') : 'No headings extracted',
