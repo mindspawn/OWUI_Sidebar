@@ -148,6 +148,53 @@
                             const stringValue = String(value);
                             return stringValue || defaultValue;
                         };
+                        const issueSummaryCache = {};
+                        const fetchIssueSummary = async (issueKey) => {
+                            if (!issueKey) return null;
+                            const normalizedKey = issueKey.trim();
+                            if (!normalizedKey) return null;
+                            const cacheKey = normalizedKey.toUpperCase();
+                            if (issueSummaryCache[cacheKey]) {
+                                return issueSummaryCache[cacheKey];
+                            }
+                            try {
+                                const response = await fetch(`${window.location.origin}/rest/api/2/issue/${normalizedKey}?fields=summary`, {
+                                    method: 'GET',
+                                    credentials: 'include',
+                                    headers: { 'Accept': 'application/json' }
+                                });
+                                if (!response.ok) {
+                                    return normalizedKey;
+                                }
+                                const data = await response.json();
+                                const summary = data?.fields?.summary || data?.summary || '';
+                                const value = summary ? `${normalizedKey}: ${summary}` : normalizedKey;
+                                issueSummaryCache[cacheKey] = value;
+                                return value;
+                            } catch (error) {
+                                return normalizedKey;
+                            }
+                        };
+                        const resolveIssueLink = async (fieldValue) => {
+                            if (!fieldValue) return null;
+                            if (typeof fieldValue === 'string') {
+                                return await fetchIssueSummary(fieldValue);
+                            }
+                            if (typeof fieldValue === 'object') {
+                                const key = fieldValue.key || fieldValue.id || fieldValue.issueKey || fieldValue.value || '';
+                                const summary = fieldValue.fields?.summary || fieldValue.summary || '';
+                                if (key && summary) {
+                                    return `${key}: ${summary}`;
+                                }
+                                if (summary && !key) {
+                                    return summary;
+                                }
+                                if (key) {
+                                    return await fetchIssueSummary(key);
+                                }
+                            }
+                            return null;
+                        };
 
                         const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
                         const summaryText = replaceUserMentions(fields.summary || '—');
@@ -158,6 +205,8 @@
                                 const body = cleanHtml(comment.body) || '—';
                                 return `comment by ${authorName} on ${dateLabel}:\n${body}`;
                             });
+                        const epicLink = await resolveIssueLink(fields.customfield_10009);
+                        const parentLink = await resolveIssueLink(fields.customfield_21701);
 
                         const lines = [
                             `Issue: ${issue.key}`,
@@ -171,7 +220,8 @@
                             `Created: ${formatDate(fields.created)}`,
                             `Updated: ${formatDate(fields.updated)}`,
                             `Resolution: ${fields.resolution?.name || 'None'}`,
-                            `Epic: ${fields.customfield_10011 || fields.epic?.name || '—'}`,
+                            `Epic Link: ${epicLink || 'None'}`,
+                            `Parent Link: ${parentLink || 'None'}`,
                             `Discovered in Product: ${formatFieldValue(fields.customfield_10719, 'None')}`,
                             `Discovered in Customer: ${formatFieldValue(fields.customfield_23301, 'None')}`,
                             `Affects Versions: ${formatList(fields.versions)}`,
