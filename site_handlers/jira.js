@@ -1,6 +1,12 @@
 (function() {
     if (!window.CustomSiteHandlers) return;
 
+    const IGNORED_JIRA_USERS = [
+        'automation.bot',
+        'status.bot',
+        'service.account'
+    ];
+
     window.CustomSiteHandlers.register({
         id: 'jira.foo.bar',
         matches: (urlObj) => urlObj.hostname.toLowerCase() === 'jira.foo.bar' && /\/browse\//i.test(urlObj.pathname),
@@ -10,11 +16,29 @@
             }
 
             showStatusMessage('Fetching Jira issue details...');
-
             try {
                 const results = await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    func: async () => {
+                    args: [IGNORED_JIRA_USERS],
+                    func: async (ignoredUsersList) => {
+                        const normalizeToken = (token) => (token ? token.toString().trim().toLowerCase() : '');
+                        const ignoredSet = new Set((ignoredUsersList || []).map(normalizeToken).filter(Boolean));
+                        const shouldIgnoreComment = (author) => {
+                            if (!author) return false;
+                            const tokens = [
+                                author.name,
+                                author.key,
+                                author.accountId,
+                                author.emailAddress,
+                                author.username,
+                                author.userName
+                            ];
+                            if (author.displayName) {
+                                tokens.push(author.displayName.replace(/\s+/g, ''));
+                                tokens.push(author.displayName);
+                            }
+                            return tokens.map(normalizeToken).some(token => token && ignoredSet.has(token));
+                        };
                         const match = window.location.pathname.match(/\/browse\/([^/?#]+)/i);
                         const issueKey = match ? match[1] : null;
                         if (!issueKey) {
@@ -79,7 +103,8 @@
 
                         const description = cleanHtml(fields.description || issue.renderedFields?.description || '');
                         const summaryText = replaceUserMentions(fields.summary || '—');
-                        const comments = (fields.comment?.comments || []).map(comment => {
+                        const commentsSource = (fields.comment?.comments || []).filter(comment => !shouldIgnoreComment(comment.author));
+                        const comments = commentsSource.map(comment => {
                             const authorName = comment.author?.displayName || humanizeIdentifier(comment.author?.name) || 'Unknown';
                             const dateLabel = formatCommentDate(comment.updated || comment.created);
                             const body = cleanHtml(comment.body) || '—';

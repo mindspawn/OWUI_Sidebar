@@ -9,6 +9,7 @@ A Chrome/Edge(tested)/Brave extension that integrates Open WebUI (OWUI) directly
 - Default internal/external URLs now point to `https://chat.foo.bar`, so new installs work immediately until you swap in your own hostnames.
 - The options UI hides everything except the summary language/prompt override controls to keep fork merges clean; API and URL fields still exist but are hidden until needed.
 - Site-specific handlers for Jira and Confluence (Data Center v9) reuse the browser session to fetch REST metadata and drop sanitized `.txt` files instead of raw HTML.
+- Added a Jira ignore list (hardcoded in `site_handlers/jira.js`) so you can skip status-bot or noisy system users when exporting comments.
 - Plain-text drops share the same sanitized pipeline as PDFs/HTML, preventing non-ASCII issues for custom handlers.
 - Keyboard shortcut updated to `Ctrl+Alt+H` (same on macOS) to open the sidebar instantly; configure via `chrome://extensions/shortcuts` if needed.
 **Key advantages**: Smart dual-URL routing avoids tunnel overhead (Tailscale/Cloudflare) when using internal URLs, and content extraction ensures authenticated pages remain accessible to OWUI (unlike URL-only attachment).
@@ -92,6 +93,7 @@ The extension displays visual indicators to show the current connection status:
   comment by Jon Doe on 5/22/2025:
   Comment body here
   ```
+  Edit the `IGNORED_JIRA_USERS` array inside `site_handlers/jira.js` to omit bot/system commenters (use lowercase usernames/account IDs).
 
 - **Confluence Data Center v9**: On `confluence.foo.bar`, the extension calls `/rest/api/content/{pageId}?expand=body.view,...` to capture headings, labels, space info, and the rendered body. Mentions and user chips resolve to display names automatically.
 
