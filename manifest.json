@@ -46,8 +46,8 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Alt+H",
-        "mac": "Ctrl+Alt+H"
+        "default": "Ctrl+Shift+H",
+        "mac": "Command+Shift+H"
       },
       "description": "Open OWUI Sidebar"
     }
