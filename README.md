@@ -7,6 +7,7 @@ A Chrome/Edge(tested)/Brave extension that integrates Open WebUI (OWUI) directly
 ## Recent Updates
 
 - Default internal/external URLs now point to `https://chat.foo.bar`, so new installs work immediately until you swap in your own hostnames.
+- `urlConfig.js` now owns the internal/external defaults, so you can adjust them without touching other files (and avoid merge conflicts).
 - The options UI hides everything except the summary language/prompt override controls to keep fork merges clean; API and URL fields still exist but are hidden until needed.
 - Site-specific handlers for Jira and Confluence (Data Center v9) reuse the browser session to fetch REST metadata and drop sanitized `.txt` files instead of raw HTML.
 - Added a Jira ignore list (hardcoded in `site_handlers/jira.js`) so you can skip status-bot or noisy system users when exporting comments.
@@ -69,7 +70,7 @@ This dual-URL approach ensures that:
 - **Seamless fallback**: If you're away from your local network, the extension automatically uses your external URL
 - **Optimized performance**: When you have access to the internal URL, queries are processed directly without going through tunnels (Tailscale, Cloudflare, etc.), resulting in faster response times and reduced latency
 
-Both internal and external URL defaults are preset to `https://chat.foo.bar`. Update them from the options page (or via sync storage) when pointing at a different OWUI deployment.
+Both internal and external URL defaults now live in `urlConfig.js` (preset to `https://chat.foo.bar`). Update that file for repo-level defaults, or override them from the options page / sync storage when pointing at a different OWUI deployment.
 
 Without this approach, you might encounter:
 - Login prompts when already authenticated
@@ -148,7 +149,7 @@ Use `Ctrl+Alt+H` to open the OWUI sidebar from anywhere. Visit `chrome://extensi
    - Click on the extension icon in the toolbar (you may need to pin it from the extensions menu)
    - If you haven't configured a URL yet, you'll see a welcome message with a button to open settings
    - Right-click the extension icon and select "Options" or click "Details" → "Extension options"
-   - Internal/external URLs default to `https://chat.foo.bar`. Update them (even though the fields are hidden by default) if your OWUI instance lives elsewhere. Only the summary language and prompt override controls stay visible to reduce merge noise.
+   - Internal/external URLs default to the values in `urlConfig.js` (preset to `https://chat.foo.bar`). Update that file for shared defaults, or use the options UI (even though the fields are hidden by default) if your OWUI instance lives elsewhere. Only the summary language and prompt override controls stay visible to reduce merge noise.
    - (Optional) Reveal the knowledge/API settings if you plan to use RAG uploads; the API/JWT key still lives there.
 
 7. **Access the Sidebar**

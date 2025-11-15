@@ -238,10 +238,12 @@ async function saveOptions() {
 
 // Restore options from chrome.storage
 async function restoreOptions() {
+    const defaultSidebar = OWUI_URL_CONFIG?.sidebarUrl || '';
+    const defaultExternal = OWUI_URL_CONFIG?.externalUrl || '';
     const items = await new Promise(resolve => {
         chrome.storage.sync.get({
-            sidebarUrl: 'https://chat.foo.bar', // default value
-            externalUrl: 'https://chat.foo.bar',
+            sidebarUrl: defaultSidebar,
+            externalUrl: defaultExternal,
             summaryLanguage: 'en',
             overridePrompt: false,
             customPrompt: '',

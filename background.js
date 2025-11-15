@@ -1,4 +1,21 @@
 // Background service worker to handle messages and script injection
+// Load default URL configuration so it can be reused across contexts.
+importScripts('urlConfig.js');
+
+function getConfiguredUrls(settings = {}) {
+    const fallbackSidebar = OWUI_URL_CONFIG?.sidebarUrl || '';
+    const fallbackExternal = OWUI_URL_CONFIG?.externalUrl || '';
+    
+    const sidebarUrl = (typeof settings.sidebarUrl === 'string' && settings.sidebarUrl.trim() !== '')
+        ? settings.sidebarUrl
+        : fallbackSidebar;
+    
+    const externalUrl = (typeof settings.externalUrl === 'string' && settings.externalUrl.trim() !== '')
+        ? settings.externalUrl
+        : fallbackExternal;
+    
+    return { sidebarUrl, externalUrl };
+}
 
 // Check if a URL is reachable
 async function checkUrlReachability(url) {
@@ -23,51 +40,52 @@ async function checkUrlReachability(url) {
 // Determine which URL to use based on availability
 async function determineActiveUrl() {
     const settings = await chrome.storage.sync.get(['sidebarUrl', 'externalUrl']);
+    const { sidebarUrl, externalUrl } = getConfiguredUrls(settings);
     
-    // Don't set a default URL if nothing is configured
+    // Don't set a default URL if nothing is configured anywhere
     let activeUrl = null;
     let urlSource = null;
     
     // First try internal URL
-    if (settings.sidebarUrl && settings.sidebarUrl !== '') {
-        console.log('Checking internal URL:', settings.sidebarUrl);
-        const isInternalReachable = await checkUrlReachability(settings.sidebarUrl);
+    if (sidebarUrl) {
+        console.log('Checking internal URL:', sidebarUrl);
+        const isInternalReachable = await checkUrlReachability(sidebarUrl);
         
         if (isInternalReachable) {
             console.log('Internal URL is reachable, using it');
-            activeUrl = settings.sidebarUrl;
+            activeUrl = sidebarUrl;
             urlSource = 'internal';
-        } else if (settings.externalUrl && settings.externalUrl !== '') {
-            console.log('Internal URL not reachable, checking external URL:', settings.externalUrl);
-            const isExternalReachable = await checkUrlReachability(settings.externalUrl);
+        } else if (externalUrl) {
+            console.log('Internal URL not reachable, checking external URL:', externalUrl);
+            const isExternalReachable = await checkUrlReachability(externalUrl);
             
             if (isExternalReachable) {
                 console.log('External URL is reachable, using it');
-                activeUrl = settings.externalUrl;
+                activeUrl = externalUrl;
                 urlSource = 'external';
             } else {
                 console.log('Neither URL is reachable, defaulting to internal URL');
-                activeUrl = settings.sidebarUrl;
+                activeUrl = sidebarUrl;
                 urlSource = 'internal';
             }
         } else {
             // Internal URL not reachable and no external URL
             console.log('Internal URL not reachable, no external URL configured');
-            activeUrl = settings.sidebarUrl;
+            activeUrl = sidebarUrl;
             urlSource = 'internal';
         }
-    } else if (settings.externalUrl && settings.externalUrl !== '') {
+    } else if (externalUrl) {
         // No internal URL set, try external
-        console.log('No internal URL set, checking external URL:', settings.externalUrl);
-        const isExternalReachable = await checkUrlReachability(settings.externalUrl);
+        console.log('No internal URL set, checking external URL:', externalUrl);
+        const isExternalReachable = await checkUrlReachability(externalUrl);
         
         if (isExternalReachable) {
             console.log('External URL is reachable, using it');
-            activeUrl = settings.externalUrl;
+            activeUrl = externalUrl;
             urlSource = 'external';
         } else {
             console.log('External URL not reachable');
-            activeUrl = settings.externalUrl;
+            activeUrl = externalUrl;
             urlSource = 'external';
         }
     } else {
@@ -137,7 +155,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     
     // Also set up initial check for first-time setup
     const settings = await chrome.storage.sync.get(['sidebarUrl', 'externalUrl']);
-    if (!settings.sidebarUrl && !settings.externalUrl) {
+    const { sidebarUrl, externalUrl } = getConfiguredUrls(settings);
+    if (!sidebarUrl && !externalUrl) {
         console.log('No URLs configured yet, waiting for initial setup...');
     }
 });

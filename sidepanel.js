@@ -240,13 +240,21 @@ async function loadActiveUrl() {
                 updateStatusIcons(updatedData.activeUrlSource);
             } else {
                 // Final fallback: check if we have a saved internal URL
-                chrome.storage.sync.get({
-                    sidebarUrl: ''
-                }, (items) => {
+                chrome.storage.sync.get(['sidebarUrl', 'externalUrl'], (items) => {
                     const iframe = document.getElementById('sidebarFrame');
+                    const fallbackSidebar = OWUI_URL_CONFIG?.sidebarUrl?.trim() || '';
+                    const fallbackExternal = OWUI_URL_CONFIG?.externalUrl?.trim() || '';
+                    const sidebarUrl = (typeof items.sidebarUrl === 'string' && items.sidebarUrl.trim() !== '')
+                        ? items.sidebarUrl
+                        : fallbackSidebar;
+                    const externalUrl = (typeof items.externalUrl === 'string' && items.externalUrl.trim() !== '')
+                        ? items.externalUrl
+                        : fallbackExternal;
+                    const fallbackUrl = sidebarUrl || externalUrl;
+                    const fallbackSource = sidebarUrl ? 'internal' : (externalUrl ? 'external' : null);
                     
                     // If no URL is configured or it's the default example.com, show settings prompt
-                    if (!items.sidebarUrl) {
+                    if (!fallbackUrl) {
                         // Instead of using a data URL with postMessage, create the content directly in the iframe
                         // First set a blank page
                         iframe.src = 'about:blank';
@@ -343,8 +351,8 @@ async function loadActiveUrl() {
                         showStatusMessage('Please configure OWUI URL in settings', true);
                     } else {
                         // Load the configured URL
-                        iframe.src = items.sidebarUrl;
-                        updateStatusIcons('internal');
+                        iframe.src = fallbackUrl;
+                        updateStatusIcons(fallbackSource);
                     }
                 });
             }
