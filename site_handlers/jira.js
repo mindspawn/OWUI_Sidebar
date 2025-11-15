@@ -160,7 +160,7 @@
                             `Reporter: ${formatUser(fields.reporter)}`,
                             `Created: ${formatDate(fields.created)}`,
                             `Updated: ${formatDate(fields.updated)}`,
-                            `Resolved: ${formatDate(fields.resolutiondate)}`,
+                            `Resolution: ${fields.resolution?.name || 'None'}`,
                             `Epic: ${fields.customfield_10011 || fields.epic?.name || '—'}`,
                             `Affects Versions: ${formatList(fields.versions)}`,
                             `Fix Versions: ${formatList(fields.fixVersions)}`,
