@@ -65,14 +65,14 @@
                                 heading.replaceWith(marker);
                             });
                         };
-                        const convertListsToMarkdown = (root) => {
-                            if (!root) return;
-                            const LIST_SELECTOR = 'ul, ol';
-                            const isListNode = (node) => node?.nodeType === Node.ELEMENT_NODE && /^(ul|ol)$/i.test(node.tagName);
-                            // Depth-aware list handling mirrors Turndown's markdown approach so nested numbering stays intact.
-                            const listToMarkdown = (listNode, depth = 0) => {
-                                const isOrdered = listNode.tagName.toLowerCase() === 'ol';
-                                const indent = '  '.repeat(depth);
+                            const convertListsToMarkdown = (root) => {
+                                if (!root) return;
+                                const LIST_SELECTOR = 'ul, ol';
+                                const isListNode = (node) => node?.nodeType === Node.ELEMENT_NODE && /^(ul|ol)$/i.test(node.tagName);
+                                // Depth-aware list handling mirrors Turndown's markdown approach so nested numbering stays intact.
+                                const listToMarkdown = (listNode, depth = 0) => {
+                                    const isOrdered = listNode.tagName.toLowerCase() === 'ol';
+                                    const indent = '    '.repeat(depth);
                                 let index = parseInt(listNode.getAttribute('start'), 10);
                                 if (!Number.isFinite(index) || index < 1) index = 1;
                                 const lines = [];
