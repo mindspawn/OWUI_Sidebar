@@ -53,6 +53,18 @@
                             if (!text) return '';
                             return text.replace(/\[~([^\]]+)\]/g, (_, token) => humanizeIdentifier(token));
                         };
+                        const convertHeadingToMarkdown = (root) => {
+                            if (!root) return;
+                            const headings = root.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                            headings.forEach((heading) => {
+                                const level = parseInt(heading.tagName.slice(1), 10);
+                                if (Number.isNaN(level)) return;
+                                const prefix = '#'.repeat(Math.min(Math.max(level, 1), 6));
+                                const text = heading.textContent.replace(/\s+/g, ' ').trim();
+                                const marker = heading.ownerDocument.createTextNode(`\n${prefix} ${text}\n\n`);
+                                heading.replaceWith(marker);
+                            });
+                        };
                         const cleanRichText = (html) => {
                             if (!html) return '';
                             const container = document.createElement('div');
@@ -65,6 +77,7 @@
                                 }
                             });
                             container.innerHTML = replaceUserMentions(container.innerHTML);
+                            convertHeadingToMarkdown(container);
                             const text = (container.textContent || container.innerText || '')
                                 .replace(/\u00A0/g, ' ')
                                 .replace(/\s+\n/g, '\n')
