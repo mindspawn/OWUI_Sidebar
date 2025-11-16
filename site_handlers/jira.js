@@ -160,6 +160,9 @@
                         };
                         const formatFieldValue = (value, defaultValue = 'null') => {
                             if (value === null || value === undefined) return defaultValue;
+                            if (Array.isArray(value)) {
+                                return formatList(value) || defaultValue;
+                            }
                             if (typeof value === 'string') return value || defaultValue;
                             if (typeof value === 'object') {
                                 const resolved = value.displayName || value.name || value.value || value.id || '';
