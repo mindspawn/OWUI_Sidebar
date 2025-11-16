@@ -65,6 +65,61 @@
                                 heading.replaceWith(marker);
                             });
                         };
+                        const convertListsToMarkdown = (root) => {
+                            if (!root) return;
+                            const LIST_SELECTOR = 'ul, ol';
+                            const isListNode = (node) => node?.nodeType === Node.ELEMENT_NODE && /^(ul|ol)$/i.test(node.tagName);
+                            // Depth-aware list handling mirrors Turndown's markdown approach so nested numbering stays intact.
+                            const listToMarkdown = (listNode, depth = 0) => {
+                                const isOrdered = listNode.tagName.toLowerCase() === 'ol';
+                                const indent = '  '.repeat(depth);
+                                let index = parseInt(listNode.getAttribute('start'), 10);
+                                if (!Number.isFinite(index) || index < 1) index = 1;
+                                const lines = [];
+                                Array.from(listNode.children).forEach((child) => {
+                                    if (!child.tagName || child.tagName.toLowerCase() !== 'li') return;
+                                    const marker = isOrdered ? `${index}. ` : '- ';
+                                    const liClone = child.cloneNode(true);
+                                    Array.from(liClone.querySelectorAll(LIST_SELECTOR)).forEach(nested => nested.remove());
+                                    const baseText = (liClone.textContent || '')
+                                        .replace(/\u00A0/g, ' ')
+                                        .replace(/\s+\n/g, '\n')
+                                        .replace(/\n{3,}/g, '\n\n')
+                                        .replace(/[ \t]{2,}/g, ' ')
+                                        .trim();
+                                    let line = `${indent}${marker}${baseText}`;
+                                    const nestedLists = Array.from(child.querySelectorAll(LIST_SELECTOR))
+                                        .filter(nested => nested.closest('li') === child);
+                                    nestedLists.forEach((nested) => {
+                                        const nestedMarkdown = listToMarkdown(nested, depth + 1);
+                                        if (nestedMarkdown) {
+                                            line = `${line}\n${nestedMarkdown}`;
+                                        }
+                                    });
+                                    lines.push(line.trimEnd());
+                                    index += 1;
+                                });
+                                return lines.join('\n');
+                            };
+                            const getTopLevelLists = () => {
+                                const lists = Array.from(root.querySelectorAll(LIST_SELECTOR));
+                                return lists.filter((list) => {
+                                    let parent = list.parentElement;
+                                    while (parent) {
+                                        if (isListNode(parent)) {
+                                            return false;
+                                        }
+                                        parent = parent.parentElement;
+                                    }
+                                    return true;
+                                });
+                            };
+                            getTopLevelLists().forEach((list) => {
+                                const markdown = listToMarkdown(list, 0);
+                                const replacement = list.ownerDocument.createTextNode(markdown ? `\n${markdown}\n` : '');
+                                list.replaceWith(replacement);
+                            });
+                        };
                         const cleanRichText = (html) => {
                             if (!html) return '';
                             const container = document.createElement('div');
@@ -78,6 +133,7 @@
                             });
                             container.innerHTML = replaceUserMentions(container.innerHTML);
                             convertHeadingToMarkdown(container);
+                            convertListsToMarkdown(container);
                             const text = (container.textContent || container.innerText || '')
                                 .replace(/\u00A0/g, ' ')
                                 .replace(/\s+\n/g, '\n')
