@@ -69,7 +69,27 @@
                                 return { success: false, error: 'Could not determine issue key from URL' };
                             }
 
-                            const endpoint = `${window.location.origin}/rest/api/2/issue/${issueKey}?expand=renderedFields`;
+                            const fieldsQuery = [
+                                'summary',
+                                'status',
+                                'priority',
+                                'assignee',
+                                'reporter',
+                                'created',
+                                'updated',
+                                'resolution',
+                                'customfield_10009',
+                                'customfield_21701',
+                                'customfield_10719',
+                                'customfield_23301',
+                                'versions',
+                                'fixVersions',
+                                'labels',
+                                'components',
+                                'description',
+                                'comment'
+                            ].join(',');
+                            const endpoint = `${window.location.origin}/rest/api/2/issue/${issueKey}?expand=renderedFields&fields=${encodeURIComponent(fieldsQuery)}`;
                             let response;
                             try {
                                 response = await fetch(endpoint, {
