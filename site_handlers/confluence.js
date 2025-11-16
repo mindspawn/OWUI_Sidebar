@@ -127,17 +127,6 @@
                         const bodyHtml = page.body?.view?.value || '';
                         const contentText = cleanRichText(bodyHtml);
 
-                        const headings = [];
-                        if (bodyHtml) {
-                            const headingContainer = document.createElement('div');
-                            headingContainer.innerHTML = bodyHtml;
-                            headingContainer.querySelectorAll('h1, h2, h3').forEach(h => {
-                                const level = h.tagName.toLowerCase();
-                                const indent = level === 'h1' ? '' : level === 'h2' ? '  ' : '    ';
-                                headings.push(`${indent}- ${h.textContent.trim()}`);
-                            });
-                        }
-
                         const labels = (page.metadata?.labels?.results || page.metadata?.labels || [])
                             .map(label => label.name || label)
                             .filter(Boolean);
@@ -154,9 +143,6 @@
                             `Last Updated By: ${formatUser(page.history?.lastUpdated?.by || page.version?.by)}`,
                             `Last Updated: ${formatDate(updatedDate)}`,
                             `Labels: ${labels.length ? labels.join(', ') : 'null'}`,
-                            '',
-                            'Headings:',
-                            headings.length ? headings.join('\n') : 'No headings extracted',
                             '',
                             'Content:',
                             contentText || 'No body content'
