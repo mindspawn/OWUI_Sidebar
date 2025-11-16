@@ -176,6 +176,28 @@ async function runCustomSiteHandlerIfAvailable(activeTab, iframe, shouldSummariz
         return { handled: false };
     }
 
+    let parserSettings = {
+        useJiraCustomParser: true,
+        useConfluenceCustomParser: true
+    };
+
+    if (chrome?.storage?.sync?.get) {
+        try {
+            parserSettings = await chrome.storage.sync.get(parserSettings);
+        } catch (error) {
+            console.warn('Failed to load parser settings, defaulting to enabled:', error);
+        }
+    }
+
+    const handlerType = handler.siteType;
+    const parserDisabled =
+        (handlerType === 'jira' && !parserSettings.useJiraCustomParser) ||
+        (handlerType === 'confluence' && !parserSettings.useConfluenceCustomParser);
+
+    if (parserDisabled) {
+        return { handled: false };
+    }
+
     try {
         const context = {
             tab: activeTab,

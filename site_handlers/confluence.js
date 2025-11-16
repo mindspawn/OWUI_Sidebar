@@ -27,6 +27,7 @@
     const registerHandler = (host) => {
         window.CustomSiteHandlers.register({
             id: host,
+            siteType: 'confluence',
             matches: (urlObj) => urlObj.hostname.toLowerCase() === host &&
                 (/\/pages\//i.test(urlObj.pathname) || /\/display\//i.test(urlObj.pathname) || urlObj.pathname === '/pages/viewpage.action'),
             handle: async ({ tab, dropTextFile, showStatusMessage }) => {

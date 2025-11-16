@@ -172,6 +172,8 @@ async function saveOptions() {
     const enableApiAccess = document.getElementById('enableApiAccess').checked;
     const owuiApiKey = document.getElementById('owuiApiKey').value;
     const knowledgeCollection = document.getElementById('knowledgeCollection').value;
+    const useJiraCustomParser = document.getElementById('useJiraCustomParser').checked;
+    const useConfluenceCustomParser = document.getElementById('useConfluenceCustomParser').checked;
     
     // Disable save button during validation
     const saveButton = document.getElementById('save');
@@ -211,6 +213,8 @@ async function saveOptions() {
         enableApiAccess: enableApiAccess,
         owuiApiKey: owuiApiKey,
         knowledgeCollection: knowledgeCollection,
+        useJiraCustomParser: useJiraCustomParser,
+        useConfluenceCustomParser: useConfluenceCustomParser,
         // Store reachability status for reference
         lastReachabilityCheck: {
             internal: urlResults.internal || false,
@@ -249,7 +253,9 @@ async function restoreOptions() {
             customPrompt: '',
             enableApiAccess: false,
             owuiApiKey: '',
-            knowledgeCollection: ''
+            knowledgeCollection: '',
+            useJiraCustomParser: true,
+            useConfluenceCustomParser: true
         }, resolve);
     });
 
@@ -260,6 +266,8 @@ async function restoreOptions() {
     document.getElementById('customPrompt').value = items.customPrompt || '';
     document.getElementById('enableApiAccess').checked = items.enableApiAccess || false;
     document.getElementById('owuiApiKey').value = items.owuiApiKey || '';
+    document.getElementById('useJiraCustomParser').checked = items.useJiraCustomParser;
+    document.getElementById('useConfluenceCustomParser').checked = items.useConfluenceCustomParser;
     
     // Update field visibility based on checkbox states
     toggleCustomPromptField(items.overridePrompt || false);

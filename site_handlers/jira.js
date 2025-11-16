@@ -33,6 +33,7 @@
     const registerHandler = (host) => {
         window.CustomSiteHandlers.register({
             id: host,
+            siteType: 'jira',
             matches: (urlObj) => urlObj.hostname.toLowerCase() === host && /\/browse\//i.test(urlObj.pathname),
             handle: async ({ tab, dropTextFile, showStatusMessage }) => {
                 if (!tab?.id || typeof dropTextFile !== 'function') {
